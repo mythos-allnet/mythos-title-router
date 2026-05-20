@@ -1,0 +1,6 @@
+/usr/bin/zerotier-idtool
+/etc/uci-defaults/80-zt-migration
+/etc/init.d/zerotier
+/usr/bin/zerotier-one
+/etc/config/zerotier
+/usr/bin/zerotier-cli

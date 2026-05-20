@@ -1,0 +1,13 @@
+Package: luci-lib-uqr
+Version: 26.035.03066~c8cff56
+Depends: libc
+Source: feeds/luci/libs/luci-lib-uqr
+SourceName: luci-lib-uqr
+License: MIT
+Section: luci
+SourceDateEpoch: 1770166266
+URL: https://github.com/openwrt/luci
+Maintainer: OpenWrt LuCI community
+Architecture: all
+Installed-Size: 20480
+Description:  µQR - micro QR: SVG QRcode generator JS library

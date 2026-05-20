@@ -1,0 +1,14 @@
+Package: libminiupnpc
+Version: 2.2.8-r1
+Depends: libc
+Source: feeds/packages/net/miniupnpc
+SourceName: miniupnpc
+License: BSD-3-Clause
+LicenseFiles: LICENSE
+Section: libs
+SourceDateEpoch: 1770342769
+URL: https://miniupnp.tuxfamily.org
+CPE-ID: cpe:/a:miniupnp_project:miniupnpc
+Architecture: mips_24kc
+Installed-Size: 71680
+Description:  Lightweight UPnP library

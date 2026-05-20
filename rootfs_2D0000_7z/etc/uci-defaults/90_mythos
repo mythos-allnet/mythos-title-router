@@ -1,0 +1,370 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+setup_system() {
+	logger -t mythos "Setup System"
+
+	# Set default hostname
+	if [ "$(uci -q get system.@system[-1].hostname)" = "OpenWrt" ]
+	then
+		uci -q batch <<-EOI
+			set system.@system[-1].hostname='mythos-title-router'
+			commit system
+		EOI
+	fi
+
+	# Add management user
+	if ! grep -q ^mythos /etc/group
+	then
+		groupadd -r mythos
+	fi
+	if ! grep -q ^sudo /etc/group
+	then
+		groupadd -r sudo
+	fi
+	if ! grep -q ^mythos /etc/passwd
+	then
+		useradd -c mythos -g mythos -G sudo -m -r -s /bin/ash mythos
+	fi
+}
+
+setup_network() {
+	logger -t mythos "Setup Network"
+
+	# <= 24.10.x
+	if [ "$(uci -q get network.lan.ipaddr)" = "192.168.1.1" ]
+	then
+		uci -q batch <<-EOI
+			delete network.lan.ipaddr
+			delete network.lan.netmask
+			add_list network.lan.ipaddr='192.168.139.254/24'
+			commit network
+		EOI
+	fi
+
+	# > 24.10.x
+	if [ "$(uci -q get network.lan.ipaddr)" = "192.168.1.1/24" ]
+	then
+		uci -q batch <<-EOI
+			add_list network.lan.ipaddr='192.168.139.254/24'
+			del_list network.lan.ipaddr='192.168.1.1/24'
+			delete network.lan.netmask
+			commit network
+		EOI
+	fi
+
+	config_zone() {
+		local cfg="$1"
+
+		local name="$(uci -q get firewall.${cfg}.name)"
+
+		if [ "$name" = "lan" ] || [ "$name" = "wan" ]
+		then
+			uci -q rename "firewall.${cfg}=${name}"
+		fi
+	}
+
+	config_load firewall
+	config_foreach config_zone zone
+
+	# Very old configs have the VPN zone unlabeled
+	if [ "$(uci -q get firewall.vpn)" != "zone" ]
+	then
+		local mapping=""
+
+		config_forwarding() {
+			local cfg="$1"
+
+			local src="$(uci -q get firewall.${cfg}.src)"
+			local dst="$(uci -q get firewall.${cfg}.dst)"
+
+			if [ "$src" = "lan" ] && [ "$dst" = "vpn" ]
+			then
+				mapping="$cfg"
+			fi
+		}
+
+		config_load firewall
+		config_foreach config_forwarding zone
+
+		if [ "$mapping" != "" ]
+		then
+			uci -q delete "firewall.${mapping}"
+		fi
+
+		uci -q batch <<-EOI
+			set firewall.vpn='zone'
+			set firewall.vpn.name='vpn'
+			set firewall.vpn.input='ACCEPT'
+			set firewall.vpn.output='ACCEPT'
+			set firewall.vpn.forward='REJECT'
+			set firewall.vpn.masq='1'
+			set firewall.vpn.mtu_fix='1'
+			add firewall forwarding
+			set firewall.@forwarding[-1].src='lan'
+			set firewall.@forwarding[-1].dest='vpn'
+		EOI
+
+		# Add the existing VPN interface to the newly created firewall zone
+		if [ "$(uci -q get network.wg0)" = "interface" ]
+		then
+			uci -q add_list firewall.vpn.network='wg0'
+		fi
+	fi
+
+	uci -q commit firewall
+
+	config_wifi() {
+		local cfg="$1"
+
+		if [ "$(uci -q get wireless.${cfg}.ssid)" = "OpenWrt" ]
+		then
+			uci -q batch <<-EOI
+				set wireless.${cfg}.ssid='MythosTitleRouter'
+				set wireless.${cfg}.key='SegaGamesAreFun'
+				set wireless.${cfg}.encryption='psk2'
+				set wireless.${cfg}.disabled='1'
+			EOI
+		fi
+	}
+
+	config_load wireless
+	config_foreach config_wifi wifi-iface
+
+	uci -q commit wireless
+
+	local have_mapping=0
+
+	config_firewall() {
+		local cfg="$1"
+
+		if [ "$(uci -q get firewall.${cfg}.name)" = "Reject-WAN-Server-Traffic" ]
+		then
+			have_mapping=1
+		fi
+	}
+
+	config_load firewall
+	config_foreach config_firewall rule
+
+	if [ "$have_mapping" = "0" ]
+	then
+		uci -q batch <<-EOI
+			add firewall rule
+			set firewall.@rule[-1].name='Reject-WAN-Server-Traffic'
+			add_list firewall.@rule[-1].proto='all'
+			set firewall.@rule[-1].src='*'
+			set firewall.@rule[-1].dest='wan'
+			add_list firewall.@rule[-1].dest_ip='172.18.0.1'
+			add_list firewall.@rule[-1].dest_ip='172.19.0.1'
+			set firewall.@rule[-1].target='REJECT'
+			commit firewall
+		EOI
+	fi
+
+	# Set the MTU on the existing VPN interface if not set
+	if [ "$(uci -q get network.wg0)" = "interface" ] && [ "$(uci -q get network.wg0.mtu)" = "" ]
+	then
+		uci -q batch <<-EOI
+			set network.wg0.mtu='1280'
+			commit network
+		EOI
+	fi
+
+	# Ensure DNSMasq is set to use `/tmp/dnsmasq.d`
+	if [ "$(uci -q get dhcp.@dnsmasq[0].confdir)" != "/tmp/dnsmasq.d" ]
+	then
+		uci -q batch <<-EOI
+			set dhcp.@dnsmasq[0].confdir='/tmp/dnsmasq.d'
+			commit dhcp
+		EOI
+	fi
+
+	# Ensure DNSMasq does not muck with `/etc/resolv.conf`
+	# https://github.com/openwrt/openwrt/commit/8815a3114ffb788ca037e634042811a9fed1562d
+	if [ "$(uci -q get dhcp.@dnsmasq[0].localuse)" != "0" ]
+	then
+		uci -q batch <<-EOI
+			set dhcp.@dnsmasq[0].localuse='0'
+			commit dhcp
+		EOI
+	fi
+
+	# Ensure `/etc/resolv.conf` points to to `/tmp/resolv.conf.d/resolv.conf.auto`
+	rm -f /etc/resolv.conf
+	ln -sf /tmp/resolv.conf.d/resolv.conf.auto /etc/resolv.conf
+}
+
+setup_ntp() {
+	logger -t mythos "Setup NTP"
+
+	# Add secured NTS-enabled NTP servers as alternates
+	if [ "$(uci -q get chrony.@server[0])" != "server" ]
+	then
+		uci -q batch <<-EOI
+			add chrony server
+			set chrony.@server[-1].hostname='time.cloudflare.com'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='sth1.nts.netnod.se'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='sth2.nts.netnod.se'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='nts.ntp.se'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='ptbtime1.ptb.de'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='ptbtime2.ptb.de'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='ptbtime3.ptb.de'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='ptbtime4.ptb.de'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='virginia.time.system76.com'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='ohio.time.system76.com'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='oregon.time.system76.com'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='paris.time.system76.com'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='brazil.time.system76.com'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='ntppool1.time.nl'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			add chrony server
+			set chrony.@server[-1].hostname='ntppool2.time.nl'
+			set chrony.@server[-1].iburst='yes'
+			set chrony.@server[-1].nts='yes'
+			commit chrony
+		EOI
+	fi
+}
+
+setup_web() {
+	logger -t mythos "Setup Web Interface"
+
+	[ "$(uci -q get uhttpd.main.redirect_https)" != "0" ] && uci -q set uhttpd.main.redirect_https='0'
+	[ "$(uci -q get uhttpd.defaults.key_type)" != "ec" ] && uci -q set uhttpd.defaults.key_type='ec'
+	[ "$(uci -q get uhttpd.defaults.commonname)" != "mythos-router" ] && uci -q set uhttpd.defaults.commonname='mythos-router'
+
+	local have_mapping=0
+
+	visit_ucode_prefix() {
+		local val="$1"
+
+		if [ "$val" = "/cgi-bin/mythos=/usr/share/ucode/mythos/uhttpd.uc" ]
+		then
+			have_mapping=1
+		fi
+	}
+
+	config_load uhttpd
+	config_list_foreach main ucode_prefix visit_ucode_prefix
+
+	if [ "$have_mapping" = "0" ]
+	then
+		uci -q add_list uhttpd.main.ucode_prefix='/cgi-bin/mythos=/usr/share/ucode/mythos/uhttpd.uc'
+	fi
+
+	uci -q commit uhttpd
+}
+
+setup_recovery_network() {
+	logger -t mythos "Setup Recovery Network"
+
+	# These must be updated together!
+	local network_id='48d6023c46eba13a'
+	local iface_name='ztosiothl4'
+
+	# Get secret value for current authorization to recovery network
+	local recovery_network_secret="$(uci -q get zerotier.global.secret)"
+
+	# Get secret value from old location if none found
+	if [ "${recovery_network_secret}" = "" ]
+	then
+		recovery_network_secret="$(uci -q get zerotier.mythos_recovery.secret)"
+	fi
+
+	# Remove sample ZeroTier config
+	uci -q batch <<-EOI
+		delete zerotier.global
+		delete zerotier.earth
+		delete zerotier.mynet
+	EOI
+
+	# Remove existing recovery network configuration
+	uci -q batch <<-EOI
+		delete firewall.recovery
+		delete network.recovery
+		delete zerotier.mythos_recovery
+	EOI
+
+	# Recreate recovery network configuration
+	uci -q batch <<-EOI
+		set firewall.recovery='zone'
+		set firewall.recovery.name='recovery'
+		set firewall.recovery.input='ACCEPT'
+		set firewall.recovery.output='ACCEPT'
+		set firewall.recovery.forward='REJECT'
+		set firewall.recovery.mtu_fix='1'
+		add_list firewall.recovery.network='recovery'
+		set network.recovery='interface'
+		set network.recovery.device='${iface_name}'
+		set network.recovery.proto='none'
+		set zerotier.global='zerotier'
+		set zerotier.global.enabled='1'
+		set zerotier.mythos_recovery='network'
+		set zerotier.mythos_recovery.id='${network_id}'
+	EOI
+
+	# Restore secret value for recovery network, if present
+	if [ "${recovery_network_secret}" != "" ]
+	then
+		uci -q batch <<-EOI
+			set zerotier.global.secret='${recovery_network_secret}'
+		EOI
+	fi
+
+	# Commit changes
+	uci -q batch <<-EOI
+		commit firewall
+		commit network
+		commit zerotier
+	EOI
+}
+
+setup_system
+setup_network
+setup_ntp
+setup_web
+setup_recovery_network
+
+exit 0

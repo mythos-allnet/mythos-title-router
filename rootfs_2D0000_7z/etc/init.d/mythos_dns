@@ -1,0 +1,38 @@
+#!/bin/sh /etc/rc.common
+# Setup symlink for ALL.Net and game DNS overrides
+
+START=99
+
+start() {
+	local endpoint_host=$(uci -q get network.@wireguard_wg0[0].endpoint_host)
+	local config_variant
+
+	case "${endpoint_host}" in
+	"gatewaaai.evoker.fun")
+		config_variant="evoker"
+		;;
+	"gatewaaai.mythos.fun")
+		config_variant="mythos"
+		;;
+	*)
+		config_variant="none"
+		;;
+	esac
+
+	# Ensure `/tmp/dnsmasq.d` exists
+	mkdir -p "/tmp/dnsmasq.d"
+
+	# Copy the file to `/tmp/dnsmasq.d` as dnsmasq runs inside ujail and does not have
+	# general filesystem access
+	rm -f "/tmp/dnsmasq.d/sega.conf"
+	cp -fL "/usr/share/mythos/dnsmasq/${config_variant}.conf" "/tmp/dnsmasq.d/sega.conf"
+
+	# Restart dnsmasq to make config changes take effect
+	/etc/init.d/dnsmasq restart
+
+	logger -t mythos-dns "config_variant='${config_variant}'"
+}
+
+stop() {
+	rm -f "/tmp/dnsmasq.d/sega.conf"
+}

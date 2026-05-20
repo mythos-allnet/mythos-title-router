@@ -1,0 +1,13 @@
+Package: luci-compat
+Version: 26.035.03066~c8cff56
+Depends: libc, luci-lua-runtime, luci-lua-runtime
+Source: feeds/luci/modules/luci-compat
+SourceName: luci-compat
+License: Apache-2.0
+Section: luci
+SourceDateEpoch: 1770166266
+URL: https://github.com/openwrt/luci
+Maintainer: OpenWrt LuCI community
+Architecture: all
+Installed-Size: 245760
+Description:  LuCI compatibility libraries

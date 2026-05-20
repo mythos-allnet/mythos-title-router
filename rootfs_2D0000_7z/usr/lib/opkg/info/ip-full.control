@@ -1,0 +1,16 @@
+Package: ip-full
+Version: 6.11.0-r1
+Depends: libc, libnl-tiny1, libbpf1, libmnl0
+Provides: ip
+Alternatives: 300:/sbin/ip:/usr/libexec/ip-full
+Source: feeds/base/package/network/utils/iproute2
+SourceName: iproute2
+License: GPL-2.0
+Section: net
+SourceDateEpoch: 1728178994
+URL: http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2
+CPE-ID: cpe:/a:iproute2_project:iproute2
+Maintainer: Russell Senior <russell@personaltelco.net>
+Architecture: mips_24kc
+Installed-Size: 419840
+Description:  Routing control utility (full)

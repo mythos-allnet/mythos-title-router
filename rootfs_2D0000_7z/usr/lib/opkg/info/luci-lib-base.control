@@ -1,0 +1,13 @@
+Package: luci-lib-base
+Version: 26.035.03066~c8cff56
+Depends: libc, lua, luci-lib-nixio, luci-lib-ip, luci-lib-jsonc, liblucihttp-lua
+Source: feeds/luci/libs/luci-lib-base
+SourceName: luci-lib-base
+License: Apache-2.0
+Section: luci
+SourceDateEpoch: 1770166266
+URL: https://github.com/openwrt/luci
+Maintainer: OpenWrt LuCI community
+Architecture: all
+Installed-Size: 40960
+Description:  basic libraries for luci

@@ -1,0 +1,20 @@
+Package: chrony-nts
+Version: 4.6.1-r1
+Depends: libc, libcap, libpthread, libgnutls, ca-bundle
+Provides: nts
+Source: feeds/packages/net/chrony
+SourceName: chrony
+License: GPL-2.0
+LicenseFiles: COPYING
+Section: net
+Require-User: chrony=323:chrony=323
+SourceDateEpoch: 1770342769
+URL: http://chrony.tuxfamily.org/
+CPE-ID: cpe:/a:tuxfamily:chrony
+Maintainer: Miroslav Lichvar <mlichvar0@gmail.com>
+Architecture: mips_24kc
+Installed-Size: 286720
+Description:  An NTP client and server designed to perform well in a wide range
+ of conditions. It can synchronize the system clock with NTP servers,
+ reference clocks, and manual input using wristwatch and keyboard.
+ This package includes NTS support.

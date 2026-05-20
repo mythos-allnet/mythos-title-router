@@ -1,0 +1,3 @@
+/etc/modules.d/ppp
+/lib/modules/6.6.119/ppp_async.ko
+/lib/modules/6.6.119/ppp_generic.ko

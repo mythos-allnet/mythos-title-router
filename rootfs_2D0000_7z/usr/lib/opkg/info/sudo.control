@@ -1,0 +1,18 @@
+Package: sudo
+Version: 1.9.17_p2-r1
+Depends: libc
+Source: feeds/packages/admin/sudo
+SourceName: sudo
+License: ISC
+LicenseFiles: LICENSE.md
+Section: admin
+SourceDateEpoch: 1770342769
+URL: https://www.sudo.ws/
+CPE-ID: cpe:/a:sudo_project:sudo
+Maintainer: Alexandru Ardelean <ardeleanalex@gmail.com>
+Architecture: mips_24kc
+Installed-Size: 1689600
+Description:  Sudo (su "do") allows a system administrator to delegate authority to
+ give certain users (or groups of users) the ability to run some (or
+ all) commands as root or another user while providing an audit trail of
+ the commands and their arguments.

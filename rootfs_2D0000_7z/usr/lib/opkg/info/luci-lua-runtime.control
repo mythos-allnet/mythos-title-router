@@ -1,0 +1,13 @@
+Package: luci-lua-runtime
+Version: 26.035.03066~c8cff56
+Depends: libc, luci-base, lua, luci-lib-base, luci-lib-nixio, luci-lib-ip, luci-lib-jsonc, libubus-lua, liblucihttp-lua, ucode-mod-lua
+Source: feeds/luci/modules/luci-lua-runtime
+SourceName: luci-lua-runtime
+License: Apache-2.0
+Section: luci
+SourceDateEpoch: 1770166266
+URL: https://github.com/openwrt/luci
+Maintainer: OpenWrt LuCI community
+Architecture: mips_24kc
+Installed-Size: 153600
+Description:  LuCI Lua runtime libraries

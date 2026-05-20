@@ -1,0 +1,2 @@
+#!/bin/sh /etc/rc.common
+# Stub to disable OpenWrt built-in service

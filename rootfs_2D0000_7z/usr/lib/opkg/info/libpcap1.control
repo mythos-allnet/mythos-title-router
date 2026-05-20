@@ -1,0 +1,18 @@
+Package: libpcap1
+Version: 1.10.5-r2
+Depends: libc
+Provides: libpcap
+Source: feeds/base/package/libs/libpcap
+SourceName: libpcap
+License: BSD-3-Clause
+LicenseFiles: LICENSE
+Section: libs
+SourceDateEpoch: 1741907255
+URL: http://www.tcpdump.org/
+ABIVersion: 1
+CPE-ID: cpe:/a:tcpdump:libpcap
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: mips_24kc
+Installed-Size: 276480
+Description:  This package contains a system-independent library for user-level network packet
+ capture.

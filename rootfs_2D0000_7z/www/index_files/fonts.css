@@ -1,0 +1,26 @@
+@font-face {
+	font-family: minion-pro;
+	src: url('fonts/minionpro-regular.woff2') format('woff2'),
+		url('fonts/minionpro-regular.ttf') format('truetype');
+    font-style: normal;
+    font-weight: normal;
+    text-rendering: optimizeLegibility;
+}
+
+@font-face {
+	font-family: 'Lato';
+	src: url('fonts/Lato-Regular.woff2') format('woff2'),
+		url('fonts/Lato-Regular.ttf') format('truetype');
+	font-style: normal;
+	font-weight: normal;
+	text-rendering: optimizeLegibility;
+}
+
+@font-face {
+	font-family: 'Lato';
+	src: url('fonts/Lato-Bold.woff2') format('woff2'),
+		url('fonts/Lato-Bold.ttf') format('truetype');
+	font-style: normal;
+	font-weight: 700;
+	text-rendering: optimizeLegibility;
+}

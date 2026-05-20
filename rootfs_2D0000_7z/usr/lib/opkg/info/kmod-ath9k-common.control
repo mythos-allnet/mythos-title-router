@@ -1,0 +1,14 @@
+Package: kmod-ath9k-common
+Version: 6.6.119.6.12.61-r1
+Depends: kernel (=6.6.119~ba16238a7a163b7e7c5402245d60bef1-r1), kmod-ath, kmod-random-core
+Source: feeds/base/kernel/mac80211
+SourceName: mac80211
+License: GPL-2.0-only
+LicenseFiles: COPYING
+Section: kernel
+SourceDateEpoch: 1765748476
+URL: https://wireless.wiki.kernel.org/en/users/drivers/ath9k
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: mips_24kc
+Installed-Size: 409600
+Description:  Atheros 802.11n wireless devices (common code for ath9k and ath9k_htc)
