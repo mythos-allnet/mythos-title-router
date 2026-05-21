@@ -9,3 +9,6 @@ GL-A1300: (see next two lines)
   For normal flashing: https://files.sega.fun/mythos/firmware/title/v2.6.1/glinet_gl-a1300/openwrt-24.10.5-mythos-ipq40xx-generic-glinet_gl-a1300-squashfs-sysupgrade.bin  
 GL-MT300N-V2: https://files.sega.fun/mythos/firmware/title/v2.6.1/glinet_gl-mt300n-v2/openwrt-24.10.5-mythos-ramips-mt76x8-glinet_gl-mt300n-v2-squashfs-sysupgrade.bin  
 GL-MT3000: https://files.sega.fun/mythos/firmware/title/v2.6.1/glinet_gl-mt3000/openwrt-24.10.5-mythos-mediatek-filogic-glinet_gl-mt3000-squashfs-sysupgrade.bin   
+  
+  
+Contact (discord): felix.anderson
